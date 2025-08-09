@@ -1,65 +1,55 @@
 import time
-import json
-from seleniumwire import webdriver 
+from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 def get_dpop_token():
-    """
-    启动一个带监控的浏览器来获取 dpop 令牌。
-    """
     print("🚀 开始启动浏览器以获取 dpop 令牌...")
-    
+
     options = Options()
-    options.add_argument('--headless')  # 使用无头模式，不在屏幕上显示浏览器窗口
+    
+    #options.add_argument('--headless=new') 
+    
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
+    options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36')
 
-    # selenium-wire 的配置
-    sw_options = {
-        'disable_capture': True  # 先禁用捕获，需要时再开启
-    }
-
-    # 使用 webdriver-manager 自动管理 ChromeDriver
     service = Service(ChromeDriverManager().install())
-    
-    # 初始化带有 selenium-wire 功能的 driver
-    driver = webdriver.Chrome(service=service, chrome_options=options, seleniumwire_options=sw_options)
+    driver = webdriver.Chrome(service=service, options=options)
 
     print("🌐 正在访问 Mercari 网站...")
-    # 开始监控请求
-    del driver.requests
-    
-    # 访问一个任意的搜索页面来触发 API 调用
-    driver.get('https://jp.mercari.com/search?keyword=nintendo')
+    driver.get('https://jp.mercari.com/')
 
-    print("⏳ 等待 API 请求完成...")
-    # 等待几秒钟，确保后台的 API 请求已经发出并被捕获
-    time.sleep(8) # 等待时间可能需要根据网络情况调整
+    try:
+        print("⏳ 等待页面加载并寻找搜索框...")
+        search_box = WebDriverWait(driver, 20).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[placeholder="なにをお探しですか？"]'))
+        )
+        print("✅ 搜索框已找到。")
 
-    dpop_token = None
-    # 遍历所有捕获到的请求
-    for request in driver.requests:
-        # 我们只关心对搜索 API 的请求
-        if "api.mercari.jp/v2/entities:search" in request.url:
-            print("🎯 成功捕获到目标 API 请求！")
-            # 从这个请求的请求头中提取 dpop 令牌
-            if 'dpop' in request.headers:
-                dpop_token = request.headers['dpop']
-                print("🎉 成功找到 dpop 令牌！")
-                break
-    
-    driver.quit() # 关闭浏览器
+        search_box.send_keys("nintendo")
+        search_box.submit()
+        print("🔍 已提交搜索，等待 API 响应...")
 
-    if dpop_token:
-        print("\n" + "="*50)
-        print("✅ DPOP 令牌获取成功！请复制下面的完整令牌：")
-        print(dpop_token)
-        print("="*50 + "\n")
-    else:
-        print("\n❌ 未能获取 dpop 令牌。请检查网络或增加等待时间再试一次。\n")
-        
+
+        def request_interceptor(request):
+            pass
+        driver.request_interceptor = request_interceptor
+
+        request = driver.wait_for_request('/v2/entities:search', timeout=20)
+        dpop_token = request.headers.get('dpop')
+
+    except Exception as e:
+        print(f"\n❌ 在执行过程中发生错误: {e}")
+        print("   可能是页面结构已改变，或等待超时。请尝试在非无头模式下运行以进行调试。")
+        dpop_token = None
+    finally:
+        driver.quit()
+
     return dpop_token
 
 if __name__ == "__main__":
