@@ -99,6 +99,16 @@ def main():
                             message=drop_message,
                             details=dropped_item,
                         )
+                    # 发送“状态变化”通知
+                    for status_change in processed_results.get("status_changes", []):
+                        status_message = (
+                            f"状态变化: {status_change['name']} - {status_change.get('old_status', '')} → {status_change['new_status']}"
+                        )
+                        notifier.send(
+                            title=f"🔄 关键词: {name}",
+                            message=status_message,
+                            details=status_change,
+                        )
 
             except InvalidTokenError:
                 print("🚨 检测到令牌已失效！开始执行刷新流程...")

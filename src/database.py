@@ -1,6 +1,7 @@
 import sqlite3
 from pathlib import Path
 import time
+from data_processor import translate_text
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DB_FILE = ROOT_DIR / "data" / "mercari_monitor.db"
@@ -25,6 +26,7 @@ def setup_database(conn):
         item_mercari_id TEXT PRIMARY KEY,
         keyword_id INTEGER,
         name TEXT,
+        name_cn TEXT,
         price INTEGER,
         image_url TEXT,
         first_seen_timestamp INTEGER,
@@ -59,6 +61,8 @@ def process_items_batch(conn, items_list: list, keyword_id: int):
     for item in items_list:
         mercari_id = item["id"]
         price_value = item.get("price")
+        current_status = item.get("status")
+
         if isinstance(price_value, (int, float)):
             current_price = int(price_value)
         else:
@@ -70,19 +74,24 @@ def process_items_batch(conn, items_list: list, keyword_id: int):
             current_price = int(digits)
 
         cursor.execute(
-            "SELECT price FROM items WHERE item_mercari_id = ?", (mercari_id,)
+            "SELECT price, name_cn, status FROM items WHERE item_mercari_id = ?",
+            (mercari_id,),
         )
         result = cursor.fetchone()
 
         if result is None:
+            translated_name = translate_text(item["name"])
+            item["status"] = current_status
+            item["name_cn"] = translated_name
             new_items.append(item)
             cursor.execute(
-                """INSERT INTO items (item_mercari_id, keyword_id, name, price, image_url, first_seen_timestamp, last_seen_timestamp, status)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                """INSERT INTO items (item_mercari_id, keyword_id, name, name_cn, price, image_url, first_seen_timestamp, last_seen_timestamp, status)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     mercari_id,
                     keyword_id,
                     item["name"],
+                    item["name_cn"],
                     current_price,
                     item["image_url"],
                     int(time.time()),
@@ -91,13 +100,32 @@ def process_items_batch(conn, items_list: list, keyword_id: int):
                 ),
             )
         else:
-            stored_price = result[0]
+            stored_price, stored_name_cn, stored_status = result
+            needs_update = False
             if current_price < stored_price:
                 item["old_price"] = f"¥{stored_price}"
+                item["name_cn"] = stored_name_cn or item["name"]
                 price_drops.append(item)
                 cursor.execute(
                     "UPDATE items SET price = ?, last_seen_timestamp = ? WHERE item_mercari_id = ?",
                     (current_price, int(time.time()), mercari_id),
+                )
+                needs_update = True
+            if stored_status != current_status:
+                item["old_status"] = stored_status
+                item["new_status"] = current_status
+                item["name_cn"] = stored_name_cn or item["name"]
+                status_changes.append(item)
+                # 更新状态
+                cursor.execute(
+                    "UPDATE items SET status = ? WHERE item_mercari_id = ?",
+                    (current_status, mercari_id),
+                )
+                needs_update = True
+            if needs_update:
+                cursor.execute(
+                    "UPDATE items SET last_seen_timestamp = ? WHERE item_mercari_id = ?",
+                    (int(time.time()), mercari_id),
                 )
             else:
                 cursor.execute(
@@ -106,4 +134,4 @@ def process_items_batch(conn, items_list: list, keyword_id: int):
                 )
 
     conn.commit()
-    return {"new": new_items, "price_drop": price_drops}
+    return {"new": new_items, "price_drop": price_drops, "status_changes": status_changes}
