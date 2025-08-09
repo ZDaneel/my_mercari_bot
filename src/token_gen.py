@@ -1,4 +1,5 @@
 import time
+import json
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
@@ -7,12 +8,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-def get_dpop_token():
+def get_new_tokens():
     print("🚀 开始启动浏览器以获取 dpop 令牌...")
 
     options = Options()
     
-    #options.add_argument('--headless=new') 
+    options.add_argument('--headless=new') 
     
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
@@ -42,6 +43,14 @@ def get_dpop_token():
 
         request = driver.wait_for_request('/v2/entities:search', timeout=20)
         dpop_token = request.headers.get('dpop')
+        laplace_uuid = None
+
+        if request.body:
+            try:
+                body_data = json.loads(request.body.decode('utf-8'))
+                laplace_uuid = body_data.get('laplaceDeviceUuid')
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                print(f"解析请求体失败: {e}")
 
     except Exception as e:
         print(f"\n❌ 在执行过程中发生错误: {e}")
@@ -50,7 +59,10 @@ def get_dpop_token():
     finally:
         driver.quit()
 
-    return dpop_token
+    if dpop_token and laplace_uuid:
+        return dpop_token, laplace_uuid
+    else:
+        return None, None
 
 if __name__ == "__main__":
-    get_dpop_token()
+    get_new_tokens()
