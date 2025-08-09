@@ -2,24 +2,29 @@ import requests
 import json
 import uuid
 
+
 class InvalidTokenError(Exception):
     pass
 
+
 API_URL = "https://api.mercari.jp/v2/entities:search"
 
-def fetch_mercari_items(keyword: str, dpop_token: str, laplace_uuid: str, page_size: int = 20):
+
+def fetch_mercari_items(
+    keyword: str, dpop_token: str, laplace_uuid: str, page_size: int = 20
+):
     headers = {
         "content-type": "application/json",
         "dpop": dpop_token,
         "x-platform": "web",
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     }
-    
+
     payload = {
         "pageSize": page_size,
         "searchCondition": {
             "keyword": keyword,
-            "sort": "SORT_CREATED_TIME", 
+            "sort": "SORT_CREATED_TIME",
             "order": "ORDER_DESC",
             "status": [],
             "excludeKeyword": "",
@@ -39,7 +44,7 @@ def fetch_mercari_items(keyword: str, dpop_token: str, laplace_uuid: str, page_s
             "itemTypes": [],
             "skuIds": [],
             "shopIds": [],
-            "excludeShippingMethodIds": []
+            "excludeShippingMethodIds": [],
         },
         "source": "BaseSerp",
         "serviceFrom": "suruga",
@@ -48,7 +53,7 @@ def fetch_mercari_items(keyword: str, dpop_token: str, laplace_uuid: str, page_s
         "withItemSizes": True,
         "withAuction": True,
         "laplaceDeviceUuid": laplace_uuid,
-        "searchSessionId": uuid.uuid4().hex
+        "searchSessionId": uuid.uuid4().hex,
     }
 
     print(f"🔍 正在为关键词 '{keyword}' 请求商品信息...")
@@ -59,7 +64,7 @@ def fetch_mercari_items(keyword: str, dpop_token: str, laplace_uuid: str, page_s
             raise InvalidTokenError("DPOP 令牌已过期或无效。")
 
         response.raise_for_status()
-        
+
         print("✅ 请求成功！")
         return response.json()
 
@@ -71,7 +76,7 @@ def fetch_mercari_items(keyword: str, dpop_token: str, laplace_uuid: str, page_s
         except json.JSONDecodeError:
             print(e.response.text)
         print("--------------------------")
-        return None 
-    
+        return None
+
     except requests.exceptions.RequestException as e:
         raise e
