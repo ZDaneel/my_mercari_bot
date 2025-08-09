@@ -1,4 +1,7 @@
+import requests
 from abc import ABC, abstractmethod
+import configparser
+
 
 class Notifier(ABC):
     @abstractmethod
@@ -9,12 +12,28 @@ class Notifier(ABC):
         """
         pass
 
+
 class ConsoleNotifier(Notifier):
     def send(self, title: str, message: str, details: dict = None):
-        print("="*30)
-        print(f"【{title}】")
+        print("\n" + "=" * 30)
+        print(f"📬 [{title}]")
         print(message)
-        if details:
-            for key, value in details.items():
-                print(f"- {key.capitalize()}: {value}")
-        print("="*30)
+        if details and details.get("link"):
+            print(f"   🔗 链接: {details['link']}")
+        print("=" * 30)
+
+
+def notifier_factory(config: configparser.ConfigParser) -> Notifier:
+    try:
+        notifier_type = config.get("notifier", "type", fallback="console").lower()
+        print(f"...根据配置，正在初始化 '{notifier_type}' 通知器...")
+
+        if notifier_type == "console":
+            return ConsoleNotifier()
+        else:
+            print(f"⚠️ 警告: 未知的通知器类型 '{notifier_type}'，将默认使用控制台通知。")
+            return ConsoleNotifier()
+
+    except Exception as e:
+        print(f"❌ 初始化通知器时发生错误: {e}。将回退到控制台通知。")
+        return ConsoleNotifier()

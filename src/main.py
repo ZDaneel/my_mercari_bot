@@ -8,7 +8,7 @@ import database
 from token_manager import load_credentials, save_credentials
 from token_gen import get_new_tokens
 from mercari_api import fetch_mercari_items, InvalidTokenError
-from notifier import ConsoleNotifier
+from notifier import notifier_factory
 
 
 def init_database():
@@ -24,16 +24,15 @@ def load_config():
     config = configparser.ConfigParser()
     config.read(config_file_path)
 
-    check_interval = config.getint("settings", "check_interval_seconds", fallback=60)
-    page_size = config.getint("settings", "page_size", fallback=20)
-    keywords_to_monitor = list(config["keywords"].values())
-
-    return check_interval, keywords_to_monitor, page_size
+    return config
 
 
 def main():
-    check_interval, keywords_to_monitor, page_size = load_config()
-    notifier = ConsoleNotifier()
+    config = load_config()
+    check_interval = config.getint("settings", "check_interval_seconds", fallback=60)
+    page_size = config.getint("settings", "page_size", fallback=20)
+    keywords_to_monitor = list(config["keywords"].values())
+    notifier = notifier_factory(config)
 
     db_conn = init_database()
     database.sync_keywords(db_conn, keywords_to_monitor)
@@ -66,9 +65,6 @@ def main():
                 )
 
                 if items_data and "items" in items_data:
-                    print(
-                        f"✔️ 成功获取到 {len(items_data['items'])} 个 '{name}' 的商品。"
-                    )
                     cleaned_list = []
                     for item in items_data["items"]:
                         cleaned_list.append(
@@ -76,7 +72,6 @@ def main():
                                 "id": item["id"],
                                 "name": item["name"],
                                 "price": int(item["price"]),
-                                "link": f"https://jp.mercari.com/item/{item['id']}",
                                 "image_url": (
                                     item["thumbnails"][0]
                                     if item.get("thumbnails")
@@ -87,7 +82,23 @@ def main():
                     processed_results = database.process_items_batch(
                         db_conn, cleaned_list, kid
                     )
-                    print(processed_results)
+                    # 发送“新上架”通知
+                    for new_item in processed_results.get("new", []):
+                        notifier.send(
+                            title=f"🔍 关键词: {name}",
+                            message=f"发现新商品: {new_item['name']} - {new_item['price']}円",
+                            details=new_item,
+                        )
+                    # 发送“降价”通知
+                    for dropped_item in processed_results.get("price_drop", []):
+                        drop_message = (
+                            f"降价: {dropped_item['name']} - {dropped_item.get('old_price', '')} → {dropped_item['price']}円"
+                        )
+                        notifier.send(
+                            title=f"🔻 关键词: {name}",
+                            message=drop_message,
+                            details=dropped_item,
+                        )
 
             except InvalidTokenError:
                 print("🚨 检测到令牌已失效！开始执行刷新流程...")
