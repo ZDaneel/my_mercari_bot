@@ -57,6 +57,7 @@ def process_items_batch(conn, items_list: list, keyword_id: int):
     cursor = conn.cursor()
     new_items = []
     price_drops = []
+    status_changes = []
 
     for item in items_list:
         mercari_id = item["id"]
