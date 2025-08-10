@@ -5,6 +5,7 @@ __pycache__/
 
 dist/
 build/
+logs/
 
 mercari_bot.log
 MercariMonitor.spec
