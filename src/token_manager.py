@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -7,7 +8,11 @@ CONFIG_FILE = ROOT_DIR / "data" / "dpop_token.json"
 
 def save_credentials(dpop_token: str, laplace_uuid: str):
     print("💾 正在将新凭据保存到文件...")
-    credentials = {"dpop_token": dpop_token, "laplace_uuid": laplace_uuid}
+    credentials = {
+        "dpop_token": dpop_token,
+        "laplace_uuid": laplace_uuid,
+        "last_update": int(time.time()),
+    }
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(credentials, f, indent=2)
@@ -21,7 +26,11 @@ def load_credentials() -> dict | None:
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             credentials = json.load(f)
-            if credentials.get("dpop_token") and credentials.get("laplace_uuid"):
+            if (
+                credentials.get("dpop_token")
+                and credentials.get("laplace_uuid")
+                and credentials.get("last_update")
+            ):
                 print("✅ 成功从文件加载凭据。")
                 return credentials
             else:
