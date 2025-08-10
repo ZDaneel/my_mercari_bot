@@ -13,17 +13,27 @@ def get_new_tokens():
     print("🚀 开始启动浏览器以获取 dpop 令牌...")
 
     options = Options()
-
+    options.add_argument("--window-size=1920,1080")
     options.add_argument("--headless=new")
 
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
-    options.add_argument(
-        "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
-    )
+    options.add_argument("--disable-blink-features=AutomationControlled")
+
+    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
+    options.add_argument(f"user-agent={user_agent}")
+
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
+    driver.execute_cdp_cmd(
+        "Page.addScriptToEvaluateOnNewDocument",
+        {
+            "source": 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
+        },
+    )
 
     print("🌐 正在访问 Mercari 网站...")
     driver.get("https://jp.mercari.com/")
