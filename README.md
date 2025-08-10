@@ -22,6 +22,18 @@
 2. 选择您偏好的链接类型
 3. 设置会自动保存并在下次启动时生效
 
+### 售出时间追踪
+新增了 `sold_timestamp` 字段来精确记录商品的售出时间：
+- 当商品状态从 `on_sale`/`ITEM_STATUS_ON_SALE` 变为 `trading`/`ITEM_STATUS_TRADING`/`sold_out` 时，自动记录售出时间
+- 提供更准确的销售速度分析
+- 支持售出时间统计和趋势分析
+
+### 数据库迁移
+如果您有现有的数据库，可以运行迁移脚本来添加新字段：
+```bash
+python -m src.db_migration
+```
+
 ## 使用方法
 
 1. 运行 `python run_app.py` 启动GUI界面

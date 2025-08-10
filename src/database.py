@@ -45,9 +45,18 @@ def setup_database(conn):
         mercari_created_timestamp INTEGER,
         mercari_updated_timestamp INTEGER,
         status TEXT,
+        sold_timestamp INTEGER,
         FOREIGN KEY (keyword_id) REFERENCES keywords (id)
     )"""
     )
+    
+    # 检查是否需要添加sold_timestamp字段（向后兼容）
+    cursor.execute("PRAGMA table_info(items)")
+    columns = [column[1] for column in cursor.fetchall()]
+    if 'sold_timestamp' not in columns:
+        cursor.execute("ALTER TABLE items ADD COLUMN sold_timestamp INTEGER")
+        print("✅ 已添加 sold_timestamp 字段到 items 表")
+    
     conn.commit()
 
 
@@ -178,13 +187,25 @@ def process_items_batch(conn, items_list: list, keyword_id: int):
                 item["old_status"] = stored_status
                 item["new_status"] = current_status
                 status_changes.append(item)
-                # 移除重复的日志输出，避免与控制台通知器重复
-                # logger.info(f"🔄 发现状态变化: {item['name']} {stored_status} → {current_status}")
-                # 更新状态
-                cursor.execute(
-                    "UPDATE items SET status = ?, last_seen_timestamp = ?, mercari_updated_timestamp = ? WHERE item_mercari_id = ?",
-                    (current_status, current_timestamp, int(mercari_updated) if mercari_updated else None, mercari_id),
-                )
+                
+                # 检查是否是从在售状态变为交易中状态（售出）
+                is_sold = (stored_status in ['on_sale', 'ITEM_STATUS_ON_SALE'] and 
+                          current_status in ['trading', 'ITEM_STATUS_TRADING', 'sold_out'])
+                
+                # 更新状态和售出时间
+                if is_sold:
+                    logger.info(f"💰 商品已售出: {item['name']} {stored_status} → {current_status}")
+                    cursor.execute(
+                        "UPDATE items SET status = ?, last_seen_timestamp = ?, mercari_updated_timestamp = ?, sold_timestamp = ? WHERE item_mercari_id = ?",
+                        (current_status, current_timestamp, int(mercari_updated) if mercari_updated else None, current_timestamp, mercari_id),
+                    )
+                else:
+                    # 移除重复的日志输出，避免与控制台通知器重复
+                    # logger.info(f"🔄 发现状态变化: {item['name']} {stored_status} → {current_status}")
+                    cursor.execute(
+                        "UPDATE items SET status = ?, last_seen_timestamp = ?, mercari_updated_timestamp = ? WHERE item_mercari_id = ?",
+                        (current_status, current_timestamp, int(mercari_updated) if mercari_updated else None, mercari_id),
+                    )
                 needs_update = True
             
             # 更新最后看到时间和Mercari时间戳
