@@ -7,7 +7,12 @@ DB_FILE = ROOT_DIR / "data" / "mercari_monitor.db"
 
 
 def get_connection():
-    return sqlite3.connect(DB_FILE)
+    """获取数据库连接，在连接前确保父目录存在。"""
+    
+    db_directory = DB_FILE.parent
+    db_directory.mkdir(parents=True, exist_ok=True)
+
+    return sqlite3.connect(str(DB_FILE))
 
 
 def setup_database(conn):

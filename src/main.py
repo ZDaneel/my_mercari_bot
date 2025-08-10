@@ -1,11 +1,10 @@
 import time
-import json
 import sqlite3
 import configparser
 from pathlib import Path
 import random
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 
 import database
@@ -59,7 +58,7 @@ class MercariMonitor:
         config_file_path = root_dir / "config.ini"
 
         config = configparser.ConfigParser()
-        config.read(config_file_path)
+        config.read(config_file_path, encoding="utf-8")
         return config
 
     def _load_config(self) -> AppConfig:
