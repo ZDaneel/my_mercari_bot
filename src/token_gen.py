@@ -9,7 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-def get_new_tokens():
+def get_new_tokens(test_mode: bool = False):
     print("🚀 开始启动浏览器以获取 dpop 令牌...")
 
     options = Options()
@@ -76,6 +76,10 @@ def get_new_tokens():
     finally:
         driver.quit()
 
+    if test_mode:
+        print(f"dpop_token: {dpop_token}")
+        print(f"laplace_uuid: {laplace_uuid}")
+
     if dpop_token and laplace_uuid:
         return dpop_token, laplace_uuid
     else:
@@ -83,4 +87,4 @@ def get_new_tokens():
 
 
 if __name__ == "__main__":
-    get_new_tokens()
+    get_new_tokens(test_mode=True)
