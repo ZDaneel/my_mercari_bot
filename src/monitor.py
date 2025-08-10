@@ -249,10 +249,8 @@ class MercariMonitor:
 
         # 降价通知
         for dropped_item in processed_results.get("price_drop", []):
-            old_price = dropped_item.get('old_price', '未知')
+            old_price = dropped_item.get('old_price', 0)
             current_price = dropped_item.get('price', 0)
-            if isinstance(old_price, str) and old_price.startswith('¥'):
-                old_price = old_price[1:]  # 移除¥符号
             # 降价商品时间处理
             updated_time = dropped_item.get('updated')
             created_time = dropped_item.get('created')
