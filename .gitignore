@@ -3,4 +3,8 @@ data/
 __pycache__/
 *.pyc
 
+dist/
+build/
+
 mercari_bot.log
+MercariMonitor.spec

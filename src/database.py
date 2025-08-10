@@ -1,8 +1,16 @@
 import sqlite3
 from pathlib import Path
 import time
+import sys
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = ""
+# 判断程序是否被打包
+if getattr(sys, 'frozen', False):
+    # 如果是打包后的 .exe 文件，根目录是 .exe 文件所在的目录
+    ROOT_DIR = Path(sys.executable).parent
+else:
+    # 如果是正常运行的 .py 脚本，根目录是 src 的上一级
+    ROOT_DIR = Path(__file__).resolve().parent.parent
 DB_FILE = ROOT_DIR / "data" / "mercari_monitor.db"
 
 

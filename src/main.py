@@ -6,6 +6,7 @@ import random
 import logging
 from typing import Dict, List, Optional
 from dataclasses import dataclass
+import sys
 
 import database
 from token_manager import load_credentials, save_credentials
@@ -54,7 +55,14 @@ class MercariMonitor:
 
     def _load_configparser(self) -> configparser.ConfigParser:
         """加载配置文件"""
-        root_dir = Path(__file__).resolve().parent.parent
+        root_dir = ""
+        # 判断程序是否被打包
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的 .exe 文件，根目录是 .exe 文件所在的目录
+            root_dir = Path(sys.executable).parent
+        else:
+            # 如果是正常运行的 .py 脚本，根目录是 src 的上一级
+            root_dir = Path(__file__).resolve().parent.parent
         config_file_path = root_dir / "config.ini"
 
         config = configparser.ConfigParser()
