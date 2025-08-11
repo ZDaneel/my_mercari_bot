@@ -1,7 +1,7 @@
 import tkinter as tk
 from PIL import Image
 from pystray import Icon as icon, Menu as menu, MenuItem as item
-from .gui import App
+from src.gui.gui import App
 import threading
 
 def create_gui():

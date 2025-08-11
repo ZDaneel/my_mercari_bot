@@ -13,7 +13,7 @@ import traceback
 
 # 导入日志模块
 try:
-    from .logger import get_logger
+    from ..utils.logger import get_logger
     logger = get_logger('notifier')
 except ImportError:
     # 如果无法导入日志模块，创建一个简单的日志函数
@@ -173,7 +173,7 @@ class WindowsNotifier(Notifier):
                 self.image_cache_dir = Path(sys.executable).parent / "data" / "image_cache"
             else:
                 # 开发环境
-                self.image_cache_dir = Path(__file__).resolve().parent.parent / "data" / "image_cache"
+                self.image_cache_dir = Path(__file__).resolve().parent.parent.parent / "data" / "image_cache"
             
             self.image_cache_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f"📁 图片缓存目录: {self.image_cache_dir}")

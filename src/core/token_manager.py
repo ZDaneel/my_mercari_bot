@@ -10,7 +10,7 @@ if getattr(sys, 'frozen', False):
     ROOT_DIR = Path(sys.executable).parent
 else:
     # 如果是正常运行的 .py 脚本，根目录是 src 的上一级
-    ROOT_DIR = Path(__file__).resolve().parent.parent
+    ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 CONFIG_FILE = ROOT_DIR / "data" / "dpop_token.json"
 
 

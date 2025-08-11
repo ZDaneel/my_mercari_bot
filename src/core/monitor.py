@@ -10,12 +10,12 @@ import sys
 import queue
 from datetime import datetime
 
-from . import database
+from ..database import database
 from .token_manager import load_credentials, save_credentials
 from .token_gen import get_new_tokens
 from .mercari_api import fetch_mercari_items, InvalidTokenError
-from .notifier import notifier_factory
-from .logger import get_logger
+from ..utils.notifier import notifier_factory
+from ..utils.logger import get_logger
 
 logger = get_logger("monitor")
 
@@ -68,7 +68,7 @@ class MercariMonitor:
             root_dir = Path(sys.executable).parent
         else:
             # 如果是正常运行的 .py 脚本，根目录是 src 的上一级
-            root_dir = Path(__file__).resolve().parent.parent
+            root_dir = Path(__file__).resolve().parent.parent.parent
         config_file_path = root_dir / "config.ini"
 
         config = configparser.ConfigParser()

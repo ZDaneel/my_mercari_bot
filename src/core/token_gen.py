@@ -30,7 +30,7 @@ def get_new_tokens(test_mode: bool = False):
     if getattr(sys, 'frozen', False):
         base_path = Path(sys.executable).parent
     else:
-        base_path = Path(__file__).resolve().parent.parent
+        base_path = Path(__file__).resolve().parent.parent.parent
 
     driver_path = base_path / "driver" / "chromedriver.exe"
 

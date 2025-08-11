@@ -4,9 +4,9 @@ import threading
 import queue
 import json
 from pathlib import Path
-from .monitor import MercariMonitor
-from .notifier import notifier_factory
-from .logger import setup_logging, get_log_manager, get_logger
+from ..core.monitor import MercariMonitor
+from ..utils.notifier import notifier_factory
+from ..utils.logger import setup_logging, get_log_manager, get_logger
 import sys
 
 class App:
@@ -22,7 +22,7 @@ class App:
         if getattr(sys, 'frozen', False):
             base_path = Path(sys.executable).parent
         else:
-            base_path = Path(__file__).resolve().parent.parent
+            base_path = Path(__file__).resolve().parent.parent.parent
         self.settings_path = base_path / "data" / "settings.json"
         self.settings_path.parent.mkdir(exist_ok=True)
 

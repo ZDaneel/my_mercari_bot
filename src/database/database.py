@@ -10,7 +10,7 @@ if getattr(sys, 'frozen', False):
     ROOT_DIR = Path(sys.executable).parent
 else:
     # 如果是正常运行的 .py 脚本，根目录是 src 的上一级
-    ROOT_DIR = Path(__file__).resolve().parent.parent
+    ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 DB_FILE = ROOT_DIR / "data" / "mercari_monitor.db"
 
 
@@ -82,7 +82,7 @@ def sync_keywords(conn, config_keywords: list):
     new_active_keywords = [row[0] for row in cursor.fetchall()]
     
     # 记录同步结果
-    from .logger import get_logger
+    from ..utils.logger import get_logger
     logger = get_logger("database")
     logger.info(f"🔄 数据库关键词同步:")
     logger.info(f"   同步前活跃关键词: {old_active_keywords}")
@@ -96,7 +96,7 @@ def get_active_keywords_with_ids(conn):
     active_keywords = cursor.fetchall()
     
     # 记录获取的活跃关键词
-    from .logger import get_logger
+    from ..utils.logger import get_logger
     logger = get_logger("database")
     logger.info(f"📋 获取活跃关键词: {[kw[1] for kw in active_keywords]}")
     
@@ -110,7 +110,7 @@ def process_items_batch(conn, items_list: list, keyword_id: int):
     status_changes = []
 
     # 记录处理开始
-    from .logger import get_logger
+    from ..utils.logger import get_logger
     logger = get_logger("database")
     logger.info(f"🔄 开始处理 {len(items_list)} 个商品")
 

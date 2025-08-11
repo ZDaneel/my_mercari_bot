@@ -80,7 +80,7 @@ class LogManager:
             self.base_path = Path(sys.executable).parent
         else:
             # 开发环境路径
-            self.base_path = Path(__file__).resolve().parent.parent
+            self.base_path = Path(__file__).resolve().parent.parent.parent
         
         # 创建日志目录
         self.log_dir = self.base_path / "logs"
