@@ -1,8 +1,9 @@
 import time
 import json
+import sys
+from pathlib import Path
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -26,7 +27,19 @@ def get_new_tokens(test_mode: bool = False):
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
 
-    service = Service(ChromeDriverManager().install())
+    if getattr(sys, 'frozen', False):
+        base_path = Path(sys.executable).parent
+    else:
+        base_path = Path(__file__).resolve().parent.parent
+
+    driver_path = base_path / "driver" / "chromedriver.exe"
+
+    if not driver_path.exists():
+        print(f"❌ 错误: 未在以下路径找到 chromedriver.exe -> {driver_path}")
+        return None, None
+    
+    service = Service(executable_path=str(driver_path))
+
     driver = webdriver.Chrome(service=service, options=options)
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",

@@ -170,7 +170,7 @@ def process_items_batch(conn, items_list: list, keyword_id: int):
             if current_price < stored_price:
                 current_timestamp = int(time.time())
                 mercari_updated = item.get("updated")
-                item["old_price"] = f"¥{stored_price}"
+                item["old_price"] = stored_price
                 price_drops.append(item)
                 # 移除重复的日志输出，避免与控制台通知器重复
                 # logger.info(f"🔻 发现降价商品: {item['name']} {stored_price} → {current_price}円")

@@ -219,7 +219,10 @@ class MercariMonitor:
         
         # 新商品通知
         for new_item in processed_results.get("new", []):
-            price = new_item.get('price', 0)
+            try:
+                price = int(new_item.get('price', 0))
+            except (ValueError, TypeError):
+                price = 0
             # 比较created和updated时间，决定显示哪个
             created_time = new_item.get('created')
             updated_time = new_item.get('updated')
@@ -249,8 +252,12 @@ class MercariMonitor:
 
         # 降价通知
         for dropped_item in processed_results.get("price_drop", []):
-            old_price = dropped_item.get('old_price', 0)
-            current_price = dropped_item.get('price', 0)
+            try:
+                old_price = int(dropped_item.get('old_price', 0))
+                current_price = int(dropped_item.get('price', 0))
+            except (ValueError, TypeError):
+                old_price = 0
+                current_price = 0
             # 降价商品时间处理
             updated_time = dropped_item.get('updated')
             created_time = dropped_item.get('created')
@@ -280,7 +287,10 @@ class MercariMonitor:
 
         # 状态变化通知
         for status_change in processed_results.get("status_changes", []):
-            price = status_change.get('price', 0)
+            try:
+                price = int(status_change.get('price', 0))
+            except (ValueError, TypeError):
+                price = 0
             old_status = status_change.get('old_status', '未知')
             new_status = status_change.get('new_status', '未知')
             # 状态变化商品时间处理
