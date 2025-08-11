@@ -38,7 +38,7 @@ class AppConfig:
 class MercariMonitor:
     """Mercari监控器主类"""
 
-    def __init__(self, keywords: list, page_size: int, min_interval: int, max_interval: int, link_type: str = "mercari", notifier=None, log_queue=None):
+    def __init__(self, keywords: list, page_size: int, min_interval: int, max_interval: int, link_type: str = "mercari", notifier=None, log_queue=None, credential_expiry: int = 1800):
         # 它不再需要 self.config，直接将配置存为实例属性
         self.keywords = keywords.copy()  # 使用copy避免外部修改影响
         self.page_size = page_size
@@ -46,6 +46,8 @@ class MercariMonitor:
         self.max_interval = max_interval
         self.link_type = link_type
         self.log_queue = log_queue
+        self.credential_expiry = credential_expiry  # 凭据过期时间
+        logger.info(f"🔧 监控器初始化完成 - 凭据过期时间: {self.credential_expiry}秒")
 
         # 如果传入了notifier实例就使用，否则创建新的
         if notifier is not None:
@@ -104,8 +106,8 @@ class MercariMonitor:
         if self.credentials:
             saved_last_update = self.credentials.get("last_update", 0)
             age = time.time() - saved_last_update
-            if age > MAX_CREDENTIAL_AGE_SECONDS:
-                logger.warning(f"凭据已过期，开始获取新凭据... ({age:.0f}秒)")
+            if age > self.credential_expiry:
+                logger.warning(f"凭据已过期，开始获取新凭据... ({age:.0f}秒 > {self.credential_expiry}秒)")
                 return self._refresh_credentials()
 
         return True
@@ -354,7 +356,7 @@ class MercariMonitor:
         self.monitor_thread.start()
         logger.info("🚀 Mercari 监控线程已启动")
 
-    def update_config(self, keywords: list, page_size: int, min_interval: int, max_interval: int, link_type: str, notifier=None):
+    def update_config(self, keywords: list, page_size: int, min_interval: int, max_interval: int, link_type: str, notifier=None, credential_expiry: int = None):
         """热更新监控器配置"""
         # 将配置更新放入队列，由监控线程处理
         config_update = {
@@ -363,7 +365,8 @@ class MercariMonitor:
             'min_interval': min_interval,
             'max_interval': max_interval,
             'link_type': link_type,
-            'notifier': notifier
+            'notifier': notifier,
+            'credential_expiry': credential_expiry
         }
         try:
             self.config_queue.put(config_update, block=False)
@@ -410,6 +413,12 @@ class MercariMonitor:
                         self.max_interval = config_update['max_interval']
                         self.link_type = config_update['link_type']
                         
+                        # 更新凭据过期时间（如果提供了的话）
+                        if config_update.get('credential_expiry') is not None:
+                            old_expiry = self.credential_expiry
+                            self.credential_expiry = config_update['credential_expiry']
+                            logger.info(f"🔄 凭据过期时间已更新: {old_expiry}秒 -> {self.credential_expiry}秒")
+                        
                         # 如果传入了新的notifier就使用，否则重新创建
                         if config_update.get('notifier') is not None:
                             self.notifier = config_update['notifier']
@@ -419,7 +428,7 @@ class MercariMonitor:
                             config_parser = self._load_configparser_for_notifier_only()
                             self.notifier = notifier_factory(config_parser, self.link_type, self.log_queue)
                             
-                        logger.info(f"⚙️ 配置已更新 - 关键词: {self.keywords}, 链接类型: {self.link_type}")
+                        logger.info(f"⚙️ 配置已更新 - 关键词: {self.keywords}, 链接类型: {self.link_type}, 凭据过期时间: {self.credential_expiry}秒")
                 except queue.Empty:
                     pass
 

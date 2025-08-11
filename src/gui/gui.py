@@ -13,7 +13,7 @@ class App:
     def __init__(self, root):
         self.root = root
         self.root.title("Mercari 监控器")
-        self.root.geometry("800x600")
+        self.root.geometry("800x900")
 
         self.monitor: MercariMonitor | None = None
         self.is_running = False
@@ -100,7 +100,20 @@ class App:
         notifier_frame.grid(row=4, column=1, sticky="ew", padx=5)
         
         ttk.Radiobutton(notifier_frame, text="Windows通知", variable=self.notifier_type_var, value="windows", command=self.save_settings).pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Radiobutton(notifier_frame, text="运行日志", variable=self.notifier_type_var, value="console", command=self.save_settings).pack(side=tk.LEFT)
+        ttk.Radiobutton(notifier_frame, text="控制台输出", variable=self.notifier_type_var, value="console", command=self.save_settings).pack(side=tk.LEFT)
+
+        # 添加凭据过期时间设置
+        ttk.Label(settings_frame, text="凭据过期时间 (秒):").grid(row=5, column=0, sticky="w", pady=2)
+        self.credential_expiry_entry = ttk.Entry(settings_frame)
+        self.credential_expiry_entry.grid(row=5, column=1, sticky="ew", padx=5)
+        self.credential_expiry_entry.bind("<FocusOut>", lambda e: self.save_settings())
+        
+        # 添加说明文字
+        expiry_help_frame = ttk.Frame(settings_frame)
+        expiry_help_frame.grid(row=6, column=0, columnspan=2, sticky="ew", pady=(5, 0))
+        help_text = "说明：凭据过期时间是指API访问的有效期，每次自动刷新需要数十秒，刷新后相当于使用新设备访问。如果访问间隔较短可以适当调小，减小风险，但没法排除ip被封的风险（"
+        help_label = ttk.Label(expiry_help_frame, text=help_text, wraplength=600, foreground="gray")
+        help_label.pack(anchor="w")
 
         # --- 控制区 ---
         control_frame = ttk.Frame(main_frame)
@@ -150,6 +163,10 @@ class App:
         # 加载通知器类型设置
         self.notifier_type_var.set(settings.get('notifier_type', 'console'))
         
+        # 加载凭据过期时间设置
+        self.credential_expiry_entry.delete(0, tk.END)
+        self.credential_expiry_entry.insert(0, settings.get('credential_expiry', 1800))
+        
         # (关键) 返回完整的配置字典，使用GUI中的实际关键词列表
         return {
             'keywords': list(self.keywords_list.get(0, tk.END)),  # 使用GUI中的实际关键词列表
@@ -157,7 +174,8 @@ class App:
             'max_interval': int(self.max_interval_entry.get()),
             'page_size': int(self.page_size_entry.get()),
             'link_type': self.link_type_var.get(),
-            'notifier_type': self.notifier_type_var.get()
+            'notifier_type': self.notifier_type_var.get(),
+            'credential_expiry': int(self.credential_expiry_entry.get())
         }
 
     def save_settings(self):
@@ -169,7 +187,8 @@ class App:
                 'max_interval': int(self.max_interval_entry.get()),
                 'page_size': int(self.page_size_entry.get()),
                 'link_type': self.link_type_var.get(),
-                'notifier_type': self.notifier_type_var.get()
+                'notifier_type': self.notifier_type_var.get(),
+                'credential_expiry': int(self.credential_expiry_entry.get())
             }
             with open(self.settings_path, 'w', encoding='utf-8') as f:
                 json.dump(settings, f, indent=2, ensure_ascii=False)
@@ -246,7 +265,8 @@ class App:
                 current_config['max_interval'],
                 current_config['link_type'],
                 notifier=notifier,
-                log_queue=self.log_queue
+                log_queue=self.log_queue,
+                credential_expiry=current_config['credential_expiry']
             ) 
             self.monitor.run_in_thread() # 在后台线程中运行
             
@@ -294,7 +314,8 @@ class App:
                     current_config['min_interval'],
                     current_config['max_interval'],
                     current_config['link_type'],
-                    notifier=new_notifier
+                    notifier=new_notifier,
+                    credential_expiry=current_config['credential_expiry']
                 )
                 self.last_config = current_config
                 self.logger.info("🔄 配置更新请求已发送")
@@ -318,7 +339,8 @@ class App:
             'max_interval': int(self.max_interval_entry.get()),
             'page_size': int(self.page_size_entry.get()),
             'link_type': self.link_type_var.get(),
-            'notifier_type': self.notifier_type_var.get()
+            'notifier_type': self.notifier_type_var.get(),
+            'credential_expiry': int(self.credential_expiry_entry.get())
         }
 
     def on_closing(self):   
