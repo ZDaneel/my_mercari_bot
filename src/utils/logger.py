@@ -15,6 +15,49 @@ import queue
 import threading
 from typing import Optional, Dict, Any
 
+def get_project_root() -> Path:
+    """
+    获取项目根目录，兼容打包和非打包环境
+    
+    Returns:
+        Path: 项目根目录路径
+    """
+    if getattr(sys, 'frozen', False):
+        # 打包环境：exe文件所在目录
+        return Path(sys.executable).parent
+    else:
+        # 开发环境：当前文件所在目录的上级目录
+        return Path(__file__).resolve().parent.parent.parent
+
+def get_resource_path(resource_name: str) -> Path:
+    """
+    获取资源文件路径，兼容打包和非打包环境
+    
+    Args:
+        resource_name (str): 资源名称，如 "driver/chromedriver.exe"
+    
+    Returns:
+        Path: 资源文件的完整路径
+    """
+    root_dir = get_project_root()
+    
+    if getattr(sys, 'frozen', False):
+        # 打包环境：先尝试 _internal 目录，再尝试根目录
+        internal_path = root_dir / "_internal" / resource_name
+        if internal_path.exists():
+            return internal_path
+        
+        # 如果 _internal 中不存在，尝试根目录
+        root_path = root_dir / resource_name
+        if root_path.exists():
+            return root_path
+        
+        # 如果都不存在，返回 _internal 路径（用于错误提示）
+        return internal_path
+    else:
+        # 开发环境：直接使用根目录
+        return root_dir / resource_name
+
 class ColoredFormatter(logging.Formatter):
     """彩色日志格式化器"""
     

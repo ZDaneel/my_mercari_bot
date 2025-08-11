@@ -8,6 +8,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from ..utils.logger import get_resource_path
 
 
 def get_new_tokens(test_mode: bool = False):
@@ -27,15 +28,19 @@ def get_new_tokens(test_mode: bool = False):
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
 
-    if getattr(sys, 'frozen', False):
-        base_path = Path(sys.executable).parent
-    else:
-        base_path = Path(__file__).resolve().parent.parent.parent
-
-    driver_path = base_path / "driver" / "chromedriver.exe"
+    # 使用通用的资源路径查找函数
+    driver_path = get_resource_path("driver/chromedriver.exe")
 
     if not driver_path.exists():
         print(f"❌ 错误: 未在以下路径找到 chromedriver.exe -> {driver_path}")
+        print(f"   已尝试的路径:")
+        if getattr(sys, 'frozen', False):
+            from ..utils.logger import get_project_root
+            base_path = get_project_root()
+            print(f"   - {base_path / '_internal' / 'driver' / 'chromedriver.exe'}")
+            print(f"   - {base_path / 'driver' / 'chromedriver.exe'}")
+        else:
+            print(f"   - {driver_path}")
         return None, None
     
     service = Service(executable_path=str(driver_path))
