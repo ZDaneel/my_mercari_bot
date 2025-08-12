@@ -46,7 +46,7 @@ class Notifier(ABC):
         """
         pass
 
-def notifier_factory(config: configparser.ConfigParser, link_type: str = "mercari", log_queue=None) -> Notifier:
+def notifier_factory(config: configparser.ConfigParser, link_type: str = "mercari", log_queue=None, proxy=None) -> Notifier:
     try:
         # 详细记录配置信息
         logger.info("🔍 开始初始化通知器...")
@@ -74,7 +74,7 @@ def notifier_factory(config: configparser.ConfigParser, link_type: str = "mercar
             return ConsoleNotifier(link_type, log_queue)
         elif notifier_type == "windows":
             logger.info("🪟 使用Windows通知器")
-            return WindowsNotifier(link_type)
+            return WindowsNotifier(link_type, proxy)
         else:
             logger.warning(f"⚠️ 未知的通知器类型 '{notifier_type}'，将默认使用控制台通知。")
             return ConsoleNotifier(link_type, log_queue)
@@ -159,9 +159,10 @@ class ConsoleNotifier(Notifier):
 
 
 class WindowsNotifier(Notifier):
-    def __init__(self, link_type="mercari"):
+    def __init__(self, link_type="mercari", proxy=None):
         self.link_type = link_type
-        logger.info(f"🪟 Windows通知器初始化开始，链接类型: {link_type}")
+        self.proxy = proxy
+        logger.info(f"🪟 Windows通知器初始化开始，链接类型: {link_type}, 代理: {proxy if proxy else '无'}")
         
         # 检查环境
         self._check_environment()
@@ -240,7 +241,17 @@ class WindowsNotifier(Notifier):
                 return str(local_path)
             
             logger.info(f"📥 下载图片到: {local_path}")
-            response = requests.get(image_url, stream=True, timeout=10)
+            
+            # 设置代理
+            proxies = None
+            if self.proxy and self.proxy.strip():
+                proxies = {
+                    'http': self.proxy.strip(),
+                    'https': self.proxy.strip()
+                }
+                logger.info(f"🔗 使用代理下载图片: {self.proxy.strip()}")
+            
+            response = requests.get(image_url, stream=True, timeout=10, proxies=proxies)
             response.raise_for_status()
             
             with open(local_path, 'wb') as f:

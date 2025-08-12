@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 PATH_TO_SELENIUMWIRE = r'C:\Users\zdaneel\.conda\envs\mercari\lib\site-packages\seleniumwire'
-PATH_TO_DRIVER = r'C:\Users\zdaneel\OneDrive\Desktop\my_mercari_bot\driver'
+PATH_TO_DRIVER = r'C:\Vscode-Project\my_mercari_bot\driver'
 
 a = Analysis(
     ['run_app.py'],

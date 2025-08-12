@@ -108,9 +108,22 @@ class App:
         self.credential_expiry_entry.grid(row=5, column=1, sticky="ew", padx=5)
         self.credential_expiry_entry.bind("<FocusOut>", lambda e: self.save_settings())
         
+        # 添加代理设置
+        ttk.Label(settings_frame, text="代理地址:").grid(row=6, column=0, sticky="w", pady=2)
+        self.proxy_entry = ttk.Entry(settings_frame)
+        self.proxy_entry.grid(row=6, column=1, sticky="ew", padx=5)
+        self.proxy_entry.bind("<FocusOut>", lambda e: self.save_settings())
+        
+        # 添加代理说明文字
+        proxy_help_frame = ttk.Frame(settings_frame)
+        proxy_help_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(5, 0))
+        proxy_help_text = "说明：代理地址格式为 http://host:port 或 https://host:port，例如 http://127.0.0.1:7890。留空则不使用代理。"
+        proxy_help_label = ttk.Label(proxy_help_frame, text=proxy_help_text, wraplength=600, foreground="gray")
+        proxy_help_label.pack(anchor="w")
+        
         # 添加说明文字
         expiry_help_frame = ttk.Frame(settings_frame)
-        expiry_help_frame.grid(row=6, column=0, columnspan=2, sticky="ew", pady=(5, 0))
+        expiry_help_frame.grid(row=8, column=0, columnspan=2, sticky="ew", pady=(5, 0))
         help_text = "说明：凭据过期时间是指API访问的有效期，每次自动刷新需要数十秒，刷新后相当于使用新设备访问。如果访问间隔较短可以适当调小，减小风险，但没法排除ip被封的风险（"
         help_label = ttk.Label(expiry_help_frame, text=help_text, wraplength=600, foreground="gray")
         help_label.pack(anchor="w")
@@ -167,6 +180,10 @@ class App:
         self.credential_expiry_entry.delete(0, tk.END)
         self.credential_expiry_entry.insert(0, settings.get('credential_expiry', 1800))
         
+        # 加载代理设置
+        self.proxy_entry.delete(0, tk.END)
+        self.proxy_entry.insert(0, settings.get('proxy', ''))
+        
         # (关键) 返回完整的配置字典，使用GUI中的实际关键词列表
         return {
             'keywords': list(self.keywords_list.get(0, tk.END)),  # 使用GUI中的实际关键词列表
@@ -175,7 +192,8 @@ class App:
             'page_size': int(self.page_size_entry.get()),
             'link_type': self.link_type_var.get(),
             'notifier_type': self.notifier_type_var.get(),
-            'credential_expiry': int(self.credential_expiry_entry.get())
+            'credential_expiry': int(self.credential_expiry_entry.get()),
+            'proxy': self.proxy_entry.get()
         }
 
     def save_settings(self):
@@ -188,7 +206,8 @@ class App:
                 'page_size': int(self.page_size_entry.get()),
                 'link_type': self.link_type_var.get(),
                 'notifier_type': self.notifier_type_var.get(),
-                'credential_expiry': int(self.credential_expiry_entry.get())
+                'credential_expiry': int(self.credential_expiry_entry.get()),
+                'proxy': self.proxy_entry.get()
             }
             with open(self.settings_path, 'w', encoding='utf-8') as f:
                 json.dump(settings, f, indent=2, ensure_ascii=False)
@@ -266,7 +285,8 @@ class App:
                 current_config['link_type'],
                 notifier=notifier,
                 log_queue=self.log_queue,
-                credential_expiry=current_config['credential_expiry']
+                credential_expiry=current_config['credential_expiry'],
+                proxy=current_config['proxy']
             ) 
             self.monitor.run_in_thread() # 在后台线程中运行
             
@@ -315,7 +335,8 @@ class App:
                     current_config['max_interval'],
                     current_config['link_type'],
                     notifier=new_notifier,
-                    credential_expiry=current_config['credential_expiry']
+                    credential_expiry=current_config['credential_expiry'],
+                    proxy=current_config['proxy']
                 )
                 self.last_config = current_config
                 self.logger.info("🔄 配置更新请求已发送")
@@ -329,7 +350,7 @@ class App:
         config.add_section('notifier')
         config.set('notifier', 'type', self.notifier_type_var.get())
         
-        return notifier_factory(config, self.link_type_var.get(), self.log_queue)
+        return notifier_factory(config, self.link_type_var.get(), self.log_queue, self.proxy_entry.get())
 
     def get_current_config(self):
         """获取当前GUI配置"""
@@ -340,7 +361,8 @@ class App:
             'page_size': int(self.page_size_entry.get()),
             'link_type': self.link_type_var.get(),
             'notifier_type': self.notifier_type_var.get(),
-            'credential_expiry': int(self.credential_expiry_entry.get())
+            'credential_expiry': int(self.credential_expiry_entry.get()),
+            'proxy': self.proxy_entry.get()
         }
 
     def on_closing(self):   

@@ -38,7 +38,7 @@ class AppConfig:
 class MercariMonitor:
     """Mercari监控器主类"""
 
-    def __init__(self, keywords: list, page_size: int, min_interval: int, max_interval: int, link_type: str = "mercari", notifier=None, log_queue=None, credential_expiry: int = 1800):
+    def __init__(self, keywords: list, page_size: int, min_interval: int, max_interval: int, link_type: str = "mercari", notifier=None, log_queue=None, credential_expiry: int = 1800, proxy: str = None):
         # 它不再需要 self.config，直接将配置存为实例属性
         self.keywords = keywords.copy()  # 使用copy避免外部修改影响
         self.page_size = page_size
@@ -47,14 +47,15 @@ class MercariMonitor:
         self.link_type = link_type
         self.log_queue = log_queue
         self.credential_expiry = credential_expiry  # 凭据过期时间
-        logger.info(f"🔧 监控器初始化完成 - 凭据过期时间: {self.credential_expiry}秒")
+        self.proxy = proxy  # 代理设置
+        logger.info(f"🔧 监控器初始化完成 - 凭据过期时间: {self.credential_expiry}秒, 代理: {proxy if proxy else '无'}")
 
         # 如果传入了notifier实例就使用，否则创建新的
         if notifier is not None:
             self.notifier = notifier
         else:
             config_parser = self._load_configparser_for_notifier_only()
-            self.notifier = notifier_factory(config_parser, link_type, log_queue)
+            self.notifier = notifier_factory(config_parser, link_type, log_queue, self.proxy)
         self.credentials: Optional[Dict] = None
         self.stop_event = threading.Event()  # 停止事件标志
         self.monitor_thread = None  # 用于存放监控线程
@@ -116,7 +117,7 @@ class MercariMonitor:
         """刷新凭据"""
         for attempt in range(MAX_RETRY_ATTEMPTS):
             try:
-                dpop, laplace = get_new_tokens()
+                dpop, laplace = get_new_tokens(proxy=self.proxy)
                 if dpop and laplace:
                     self.credentials = {
                         "dpop_token": dpop,
@@ -149,6 +150,7 @@ class MercariMonitor:
                 dpop_token=self.credentials["dpop_token"],
                 laplace_uuid=self.credentials["laplace_uuid"],
                 page_size=self.page_size,
+                proxy=self.proxy,
             )
 
             if not items_data or "items" not in items_data:
@@ -426,7 +428,7 @@ class MercariMonitor:
                             # 重新创建notifier以使用新的link_type
                             old_link_type = getattr(self.notifier, 'link_type', 'unknown')
                             config_parser = self._load_configparser_for_notifier_only()
-                            self.notifier = notifier_factory(config_parser, self.link_type, self.log_queue)
+                            self.notifier = notifier_factory(config_parser, self.link_type, self.log_queue, self.proxy)
                             
                         logger.info(f"⚙️ 配置已更新 - 关键词: {self.keywords}, 链接类型: {self.link_type}, 凭据过期时间: {self.credential_expiry}秒")
                 except queue.Empty:

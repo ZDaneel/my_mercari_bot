@@ -11,7 +11,7 @@ API_URL = "https://api.mercari.jp/v2/entities:search"
 
 
 def fetch_mercari_items(
-    keyword: str, dpop_token: str, laplace_uuid: str, page_size: int = 20
+    keyword: str, dpop_token: str, laplace_uuid: str, page_size: int = 20, proxy: str = None
 ):
     headers = {
         "content-type": "application/json",
@@ -56,9 +56,18 @@ def fetch_mercari_items(
         "searchSessionId": uuid.uuid4().hex,
     }
 
+    # 设置代理
+    proxies = None
+    if proxy and proxy.strip():
+        proxies = {
+            'http': proxy.strip(),
+            'https': proxy.strip()
+        }
+        print(f"🔗 使用代理: {proxy.strip()}")
+
     print(f"🔍 正在为关键词 '{keyword}' 请求商品信息...")
     try:
-        response = requests.post(API_URL, json=payload, headers=headers, timeout=15)
+        response = requests.post(API_URL, json=payload, headers=headers, proxies=proxies, timeout=15)
 
         if response.status_code == 401:
             raise InvalidTokenError("DPOP 令牌已过期或无效。")

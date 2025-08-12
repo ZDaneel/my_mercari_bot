@@ -11,12 +11,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from ..utils.logger import get_resource_path
 
 
-def get_new_tokens(test_mode: bool = False):
+def get_new_tokens(test_mode: bool = False, proxy: str = None):
     print("🚀 开始启动浏览器以获取 dpop 令牌...")
 
     options = Options()
     options.add_argument("--window-size=1920,1080")
-    options.add_argument("--headless=new")
+    #options.add_argument("--headless=new")
 
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
@@ -27,6 +27,11 @@ def get_new_tokens(test_mode: bool = False):
 
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
+
+    # 设置代理
+    if proxy and proxy.strip():
+        print(f"🔗 使用代理: {proxy.strip()}")
+        options.add_argument(f'--proxy-server={proxy.strip()}')
 
     # 使用通用的资源路径查找函数
     driver_path = get_resource_path("driver/chromedriver.exe")
