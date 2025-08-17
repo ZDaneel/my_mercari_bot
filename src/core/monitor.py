@@ -38,7 +38,7 @@ class AppConfig:
 class MercariMonitor:
     """Mercari监控器主类"""
 
-    def __init__(self, keywords: list, page_size: int, min_interval: int, max_interval: int, link_type: str = "mercari", notifier=None, log_queue=None, credential_expiry: int = 1800, proxy: str = None):
+    def __init__(self, keywords: list, page_size: int, min_interval: int, max_interval: int, link_type: str = "mercari", notifier=None, log_queue=None, credential_expiry: int = 1800, proxy: str = None, headless: bool = True):
         # 它不再需要 self.config，直接将配置存为实例属性
         self.keywords = keywords.copy()  # 使用copy避免外部修改影响
         self.page_size = page_size
@@ -48,7 +48,8 @@ class MercariMonitor:
         self.log_queue = log_queue
         self.credential_expiry = credential_expiry  # 凭据过期时间
         self.proxy = proxy  # 代理设置
-        logger.info(f"🔧 监控器初始化完成 - 凭据过期时间: {self.credential_expiry}秒, 代理: {proxy if proxy else '无'}")
+        self.headless = headless  # 浏览器调试设置
+        logger.info(f"🔧 监控器初始化完成 - 凭据过期时间: {self.credential_expiry}秒, 代理: {proxy if proxy else '无'}, 无头模式: {headless}")
 
         # 如果传入了notifier实例就使用，否则创建新的
         if notifier is not None:
@@ -117,7 +118,7 @@ class MercariMonitor:
         """刷新凭据"""
         for attempt in range(MAX_RETRY_ATTEMPTS):
             try:
-                dpop, laplace = get_new_tokens(proxy=self.proxy)
+                dpop, laplace = get_new_tokens(proxy=self.proxy, headless=self.headless)
                 if dpop and laplace:
                     self.credentials = {
                         "dpop_token": dpop,
@@ -358,7 +359,7 @@ class MercariMonitor:
         self.monitor_thread.start()
         logger.info("🚀 Mercari 监控线程已启动")
 
-    def update_config(self, keywords: list, page_size: int, min_interval: int, max_interval: int, link_type: str, notifier=None, credential_expiry: int = None):
+    def update_config(self, keywords: list, page_size: int, min_interval: int, max_interval: int, link_type: str, notifier=None, credential_expiry: int = None, proxy: str = None, headless: bool = None):
         """热更新监控器配置"""
         # 将配置更新放入队列，由监控线程处理
         config_update = {
@@ -368,7 +369,9 @@ class MercariMonitor:
             'max_interval': max_interval,
             'link_type': link_type,
             'notifier': notifier,
-            'credential_expiry': credential_expiry
+            'credential_expiry': credential_expiry,
+            'proxy': proxy,
+            'headless': headless
         }
         try:
             self.config_queue.put(config_update, block=False)
@@ -421,6 +424,18 @@ class MercariMonitor:
                             self.credential_expiry = config_update['credential_expiry']
                             logger.info(f"🔄 凭据过期时间已更新: {old_expiry}秒 -> {self.credential_expiry}秒")
                         
+                        # 更新代理设置（如果提供了的话）
+                        if config_update.get('proxy') is not None:
+                            old_proxy = self.proxy
+                            self.proxy = config_update['proxy']
+                            logger.info(f"🔄 代理设置已更新: {old_proxy if old_proxy else '无'} -> {self.proxy if self.proxy else '无'}")
+                        
+                        # 更新浏览器调试设置（如果提供了的话）
+                        if config_update.get('headless') is not None:
+                            old_headless = self.headless
+                            self.headless = config_update['headless']
+                            logger.info(f"🔄 浏览器调试设置已更新: 无头模式 {old_headless} -> {self.headless}")
+                        
                         # 如果传入了新的notifier就使用，否则重新创建
                         if config_update.get('notifier') is not None:
                             self.notifier = config_update['notifier']
@@ -430,7 +445,7 @@ class MercariMonitor:
                             config_parser = self._load_configparser_for_notifier_only()
                             self.notifier = notifier_factory(config_parser, self.link_type, self.log_queue, self.proxy)
                             
-                        logger.info(f"⚙️ 配置已更新 - 关键词: {self.keywords}, 链接类型: {self.link_type}, 凭据过期时间: {self.credential_expiry}秒")
+                        logger.info(f"⚙️ 配置已更新 - 关键词: {self.keywords}, 链接类型: {self.link_type}, 凭据过期时间: {self.credential_expiry}秒, 代理: {self.proxy if self.proxy else '无'}, 无头模式: {self.headless}")
                 except queue.Empty:
                     pass
 

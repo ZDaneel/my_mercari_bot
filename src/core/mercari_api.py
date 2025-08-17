@@ -59,11 +59,15 @@ def fetch_mercari_items(
     # 设置代理
     proxies = None
     if proxy and proxy.strip():
+        proxy_url = proxy.strip()
+        # 确保代理URL格式正确
+        if not proxy_url.startswith(('http://', 'https://')):
+            proxy_url = 'http://' + proxy_url
         proxies = {
-            'http': proxy.strip(),
-            'https': proxy.strip()
+            'http': proxy_url,
+            'https': proxy_url
         }
-        print(f"🔗 使用代理: {proxy.strip()}")
+        print(f"🔗 使用代理: {proxy_url}")
 
     print(f"🔍 正在为关键词 '{keyword}' 请求商品信息...")
     try:

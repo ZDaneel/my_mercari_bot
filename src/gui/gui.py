@@ -114,16 +114,21 @@ class App:
         self.proxy_entry.grid(row=6, column=1, sticky="ew", padx=5)
         self.proxy_entry.bind("<FocusOut>", lambda e: self.save_settings())
         
+        # 添加浏览器调试选项
+        self.headless_var = tk.BooleanVar(value=True)
+        headless_check = ttk.Checkbutton(settings_frame, text="启用无头模式（隐藏浏览器窗口）", variable=self.headless_var, command=self.save_settings)
+        headless_check.grid(row=7, column=0, columnspan=2, sticky="w", pady=2)
+        
         # 添加代理说明文字
         proxy_help_frame = ttk.Frame(settings_frame)
-        proxy_help_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(5, 0))
+        proxy_help_frame.grid(row=8, column=0, columnspan=2, sticky="ew", pady=(5, 0))
         proxy_help_text = "说明：代理地址格式为 http://host:port 或 https://host:port，例如 http://127.0.0.1:7890。留空则不使用代理。"
         proxy_help_label = ttk.Label(proxy_help_frame, text=proxy_help_text, wraplength=600, foreground="gray")
         proxy_help_label.pack(anchor="w")
         
         # 添加说明文字
         expiry_help_frame = ttk.Frame(settings_frame)
-        expiry_help_frame.grid(row=8, column=0, columnspan=2, sticky="ew", pady=(5, 0))
+        expiry_help_frame.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(5, 0))
         help_text = "说明：凭据过期时间是指API访问的有效期，每次自动刷新需要数十秒，刷新后相当于使用新设备访问。如果访问间隔较短可以适当调小，减小风险，但没法排除ip被封的风险（"
         help_label = ttk.Label(expiry_help_frame, text=help_text, wraplength=600, foreground="gray")
         help_label.pack(anchor="w")
@@ -184,6 +189,9 @@ class App:
         self.proxy_entry.delete(0, tk.END)
         self.proxy_entry.insert(0, settings.get('proxy', ''))
         
+        # 加载浏览器调试设置
+        self.headless_var.set(settings.get('headless', True))
+        
         # (关键) 返回完整的配置字典，使用GUI中的实际关键词列表
         return {
             'keywords': list(self.keywords_list.get(0, tk.END)),  # 使用GUI中的实际关键词列表
@@ -193,7 +201,8 @@ class App:
             'link_type': self.link_type_var.get(),
             'notifier_type': self.notifier_type_var.get(),
             'credential_expiry': int(self.credential_expiry_entry.get()),
-            'proxy': self.proxy_entry.get()
+            'proxy': self.proxy_entry.get(),
+            'headless': self.headless_var.get()
         }
 
     def save_settings(self):
@@ -207,7 +216,8 @@ class App:
                 'link_type': self.link_type_var.get(),
                 'notifier_type': self.notifier_type_var.get(),
                 'credential_expiry': int(self.credential_expiry_entry.get()),
-                'proxy': self.proxy_entry.get()
+                'proxy': self.proxy_entry.get(),
+                'headless': self.headless_var.get()
             }
             with open(self.settings_path, 'w', encoding='utf-8') as f:
                 json.dump(settings, f, indent=2, ensure_ascii=False)
@@ -286,7 +296,8 @@ class App:
                 notifier=notifier,
                 log_queue=self.log_queue,
                 credential_expiry=current_config['credential_expiry'],
-                proxy=current_config['proxy']
+                proxy=current_config['proxy'],
+                headless=current_config['headless']
             ) 
             self.monitor.run_in_thread() # 在后台线程中运行
             
@@ -336,7 +347,8 @@ class App:
                     current_config['link_type'],
                     notifier=new_notifier,
                     credential_expiry=current_config['credential_expiry'],
-                    proxy=current_config['proxy']
+                    proxy=current_config['proxy'],
+                    headless=current_config['headless']
                 )
                 self.last_config = current_config
                 self.logger.info("🔄 配置更新请求已发送")
@@ -362,7 +374,8 @@ class App:
             'link_type': self.link_type_var.get(),
             'notifier_type': self.notifier_type_var.get(),
             'credential_expiry': int(self.credential_expiry_entry.get()),
-            'proxy': self.proxy_entry.get()
+            'proxy': self.proxy_entry.get(),
+            'headless': self.headless_var.get()
         }
 
     def on_closing(self):   
