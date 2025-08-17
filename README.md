@@ -36,25 +36,41 @@
 - 提供更准确的销售速度分析
 - 支持售出时间统计和趋势分析
 
-### 数据库迁移
-如果您有现有的数据库，可以运行迁移脚本来添加新字段：
+## 使用方法
+
+### 环境准备
+
+#### 使用 venv
 ```bash
-python -m src.db_migration
+# 创建虚拟环境
+python -m venv mercari_bot
+
+# 激活虚拟环境
+# Windows
+mercari_bot\Scripts\activate
+# macOS/Linux
+source mercari_bot/bin/activate
+
+# 安装依赖
+pip install -r requirements.txt
 ```
 
-## 使用方法
+#### 使用 conda
+```bash
+# 创建conda环境
+conda create -n mercari_bot python=3.8
+
+# 激活环境
+conda activate mercari_bot
+
+# 安装依赖
+pip install -r requirements.txt
+```
+
+### 启动应用
 
 1. 运行 `python run_app.py` 启动GUI界面
 2. 添加要监控的关键词
 3. 调整监控设置（间隔时间、查询数量、链接类型、代理地址等）
 4. 点击"启动监控"开始监控
 5. 当发现新商品时，系统会发送通知并显示相应的链接
-
-## 代理测试
-
-如果您想测试代理功能是否正常工作，可以运行：
-```bash
-python test_proxy.py
-```
-
-这个脚本会帮助您验证代理设置是否正确。
