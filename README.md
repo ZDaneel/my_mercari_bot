@@ -1,6 +1,6 @@
 # MyMercariBot
 
-一个用于监控日本Mercari商品信息的Python应用程序。
+一个用于监控日本Mercari商品信息的Python应用程序，使用windows的gui显示
 
 ## 功能特性
 
@@ -14,14 +14,14 @@
 ## 新增功能
 
 ### 代理设置
-现在您可以在GUI界面中配置代理地址，支持HTTP和HTTPS代理：
+现在可以在GUI界面中配置代理地址，支持HTTP和HTTPS代理：
 - **代理格式**：`http://host:port` 或 `https://host:port`
 - **示例**：`http://127.0.0.1:7890`
 - **使用场景**：适用于需要本地代理访问Mercari的情况
 - **设置方法**：在GUI界面的"监控设置"区域找到"代理地址"输入框
 
 ### 链接跳转选择
-现在您可以在GUI界面中选择商品链接的跳转目标：
+现在可以在GUI界面中选择商品链接的跳转目标：
 - **煤炉**：跳转到 `https://jp.mercari.com/item/{商品ID}`
 - **乐一番**：跳转到 `https://letaoyifan.com/goods_detail/MERCARI/{商品ID}`
 
@@ -29,12 +29,6 @@
 1. 在GUI界面的"监控设置"区域找到"链接跳转"选项
 2. 选择您偏好的链接类型
 3. 设置会自动保存并在下次启动时生效
-
-### 售出时间追踪
-新增了 `sold_timestamp` 字段来精确记录商品的售出时间：
-- 当商品状态从 `on_sale`/`ITEM_STATUS_ON_SALE` 变为 `trading`/`ITEM_STATUS_TRADING`/`sold_out` 时，自动记录售出时间
-- 提供更准确的销售速度分析
-- 支持售出时间统计和趋势分析
 
 ## 使用方法
 
@@ -48,8 +42,6 @@ python -m venv mercari_bot
 # 激活虚拟环境
 # Windows
 mercari_bot\Scripts\activate
-# macOS/Linux
-source mercari_bot/bin/activate
 
 # 安装依赖
 pip install -r requirements.txt
